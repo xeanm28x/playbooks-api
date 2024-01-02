@@ -9,12 +9,11 @@ const UsuarioValidador = {
   nome: "required",
   sobrenome: "required",
   email: "required|email",
-  senha: [rule("required"), rule("min", 8)]
+  senha: [rule("required"), rule("min", 8)],
 };
 
 class UsuarioController {
   async store({ request }) {
-
     const { nome, sobrenome, email, senha, avatar } = request.all();
 
     const credencialValidadas = await validate(
@@ -30,10 +29,7 @@ class UsuarioController {
 
     const userExists = await Usuario.findBy({ email });
     if (userExists)
-      throw new BadRequestException(
-        "Usuário já cadastrado.",
-        "E_REPEAT_USER"
-      );
+      throw new BadRequestException("Usuário já cadastrado.", "E_REPEAT_USER");
 
     const userCreated = await Usuario.create({
       nome,
@@ -44,10 +40,9 @@ class UsuarioController {
     });
 
     return {
-        message: `Usuário criado com sucesso!`,
-        userCreated
+      message: `Usuário criado com sucesso!`,
+      userCreated,
     };
-
   }
 
   async login({ request, auth }) {
@@ -78,7 +73,6 @@ class UsuarioController {
       );
     }
   }
-
 }
 
 module.exports = UsuarioController;

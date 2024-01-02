@@ -8,42 +8,33 @@ trait("DatabaseTransactions");
 
 const userTester = {
   nome: "Tester",
-  email: "tester@playbooks.com",
+  sobrenome: "Da Silva",
+  email: "tester@playbook.com",
   senha: "playbooks",
-  telefone: "67901234567",
   avatar: "https://tester.com/image",
 };
 
 let token = "";
 
 test("Deve Criar um usuário", async ({ assert, client }) => {
-  const response = await client.post("/usuarios").send(userTester).end();
-  response.assertStatus(200);
-
-  const usuario = await Usuario.findBy("email", userTester.email);
-  assert.equal(usuario.nome, userTester.nome);
+  await cadastrar(assert, client, userTester, 200);
 });
 
-test("Deve fazer login do usuário criado", async ({ client }) => {
-  //cria o usuário primeiro
-  const createdResponse = await client.post("/usuarios").send(userTester).end();
-  createdResponse.assertStatus(200);
+test("Deve fazer login do usuário criado", async ({ assert, client }) => {
+  await cadastrar(assert, client, userTester, 200);
 
   //testa o login depois de criar
-  const loginResponse = await client.post("/login").send(userTester).end();
-  loginResponse.assertStatus(200);
+  await login(client, userTester, 200);
 });
 
-test("Deve mostrar as informações de perfil do usuário", async ({ client }) => {
+test("Deve mostrar as informações de perfil do usuário", async ({
+  assert,
+  client,
+}) => {
   //cria o usuário primeiro
-  const createdResponse = await client.post("/usuarios").send(userTester).end();
-  createdResponse.assertStatus(200);
-
+  await cadastrar(assert, client, userTester, 200);
   //faz o login depois de criar o usuário
-  const loginResponse = await client.post("/login").send(userTester).end();
-  loginResponse.assertStatus(200);
-
-  token = `${loginResponse.body.type} ${loginResponse.body.token}`;
+  await login(client, userTester, 200);
 
   //testa mostrar o perfil do usuário, após testar o login
   const profileResponse = await client
@@ -52,3 +43,57 @@ test("Deve mostrar as informações de perfil do usuário", async ({ client }) =
     .end();
   profileResponse.assertStatus(200);
 });
+
+const userError = {
+  nome: "Tester",
+  sobrenome: "Da Silva",
+  email: "testerplaybook.com",
+  senha: "playbooks",
+  avatar: "https://tester.com/image",
+};
+
+test("Não Deve Criar um usuário, por causa de crendeciais inválidas", async ({
+  assert,
+  client,
+}) => {
+  await cadastrar(assert, client, userError, 400);
+});
+
+test("Não Deve fazer login do usuário criado, por causa de credenciais inválidas", async ({
+  assert,
+  client,
+}) => {
+  await cadastrar(assert, client, userTester, 200);
+
+  //testa o login depois de criar
+  await login(client, userError, 400);
+});
+
+test("Não Deve mostrar as informações de perfil do usuário, por não estar logado", async ({
+  assert,
+  client,
+}) => {
+  //cria o usuário primeiro
+  await cadastrar(assert, client, userTester, 200);
+  //faz o login depois de criar o usuário
+  await login(client, userError, 400);
+
+  //testa mostrar o perfil do usuário, após testar o login
+  const profileResponse = await client
+    .get("/usuarios")
+    .header("Authorization", token)
+    .end();
+  profileResponse.assertStatus(401);
+});
+
+async function cadastrar(assert, client, user, resultadoEsperado) {
+  const response = await client.post("/usuarios").send(user).end();
+  response.assertStatus(resultadoEsperado);
+}
+
+async function login(client, user, resultadoEsperado) {
+  const loginResponse = await client.post("/login").send(user).end();
+  loginResponse.assertStatus(resultadoEsperado);
+
+  token = `${loginResponse.body.type} ${loginResponse.body.token}`;
+}

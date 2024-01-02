@@ -6,6 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
+    "dev": "adonis serve --dev",
     "test": "node ace test"
   },
   "keywords": [
@@ -28,6 +29,7 @@
     "@adonisjs/validator": "^5.1.0",
     "@japa/runner": "^3.1.1",
     "mysql": "^2.18.1",
+    "mysql2": "^2.3.3",
     "validator": "^13.11.0"
   },
   "autoload": {

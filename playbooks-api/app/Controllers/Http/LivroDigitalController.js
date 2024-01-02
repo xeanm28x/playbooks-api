@@ -1,7 +1,7 @@
 "use strict";
 
-const Livro = require("App/Models/Livro");
-const LivroDigital = require("App/Models/LivroDigital");
+const Livro = use("App/Models/Livro");
+const LivroDigital = use("App/Models/LivroDigital");
 const { validate } = use("Validator");
 const BadRequestException = use("App/Exceptions/BadRequestException");
 
