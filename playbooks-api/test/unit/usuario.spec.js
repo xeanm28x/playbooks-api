@@ -1,6 +1,6 @@
 "use strict";
 
-const { test, trait, beforeEach } = use("Test/Suite")("Usuarios");
+const { test, trait, before } = use("Test/Suite")("Usuarios");
 const Usuario = use("App/Models/Usuario");
 
 trait("Test/ApiClient");
@@ -96,4 +96,8 @@ async function login(client, user, resultadoEsperado) {
   loginResponse.assertStatus(resultadoEsperado);
 
   token = `${loginResponse.body.type} ${loginResponse.body.token}`;
+
+  return token;
 }
+
+module.exports = { cadastrar, login };

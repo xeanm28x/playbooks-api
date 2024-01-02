@@ -1,51 +1,67 @@
-const { test, trait } = use('Test/Suite')('TesteLivros');
-const Livro = use('App/Models/Livro');
+const { test, trait } = use("Test/Suite")("TesteLivros");
+const Livro = use("App/Models/Livro");
+const { cadastrar, login } = require("./usuario.spec");
 
-trait('Test/ApiClient');
+trait("Test/ApiClient");
 
 /* LIMPEZA NO BANCO ANTES DO TESTE UNITARIO */
 
-trait('DatabaseTransactions');
+trait("DatabaseTransactions");
 
-test('deve criar um novo livro', async ({assert, client}) => {
+const usuario = {
+  nome: "Tester",
+  sobrenome: "Da Silva",
+  email: "tester@play.com",
+  senha: "012345678",
+  avatar: "https://imag.com",
+};
 
-    const novoLivro = {
-        titulo : "Psicose",
-        autor : "Robert Bloch",
-        genero : "Horror",
-        numero_paginas : 256,
-        editora : "Darkside",
-        ano_publicacao : 2013
-    }
+test("deve criar um novo livro", async ({ assert, client }) => {
+  await cadastrar(assert, client, usuario, 200);
 
-    const resposta = await client.post('/livros/add').send(novoLivro).end();
-    resposta.assertStatus(200);
-    resposta.assertJSONSubset({
-        message: "Livro criado com sucesso!"
-    });
+  const token = await login(client, usuario, 200);
 
-    const livroEncontrado = await Livro.findBy('titulo', novoLivro.titulo);
-    assert.notEqual(livroEncontrado, null);
+  const novoLivro = {
+    titulo: "Psicose",
+    autor: "Robert Bloch",
+    genero: "Horror",
+    numero_paginas: 256,
+    editora: "Darkside",
+    ano_publicacao: 2013,
+  };
 
+  const resposta = await client
+    .post("/livros")
+    .header("Authorization", token)
+    .send(novoLivro)
+    .end();
+  resposta.assertStatus(200);
+  resposta.assertJSONSubset({
+    message: "Livro criado com sucesso!",
+  });
+
+  const livroEncontrado = await Livro.findBy("titulo", novoLivro.titulo);
+  assert.notEqual(livroEncontrado, null);
 });
 
-test('deve remover um livro', async ({assert, client}) =>{
+test("deve remover um livro", async ({ assert, client }) => {
+  await cadastrar(assert, client, usuario, 200);
 
-    const livro = {
-        titulo : "Psicose",
-        autor : "Robert Bloch",
-        genero : "Horror",
-        numero_paginas : 256,
-        editora : "Darkside",
-        ano_publicacao : 2013
-    }
+  const token = await login(client, usuario, 200);
 
-    const resposta = await client.post('/livros/delete').send(livro).end();
-    resposta.assertStatus(200);
-    resposta.assertJSONSubset({
-        message: "Livro removido com sucesso."
-    })
+  const livro = {
+    titulo: "Psicose",
+    autor: "Robert Bloch",
+    genero: "Horror",
+    numero_paginas: 256,
+    editora: "Darkside",
+    ano_publicacao: 2013,
+  };
 
-    const livroDeletado = await Livro.find(livro);
-
+  const resposta = await client
+    .delete("/livros")
+    .header("Authorization", token)
+    .send(livro)
+    .end();
+  resposta.assertStatus(200);
 });

@@ -7,52 +7,72 @@ const BadRequestException = use("App/Exceptions/BadRequestException");
 
 const livroFisicoValidador = {
   isbn: "required",
-  livro: "required",
+  id_tabela_livro: "required",
   total_disponivel: "required",
+  total_emprestado: "required",
 };
 
 class LivroFisicoController {
   /* INSERÇÃO */
-
   async store({ request }) {
-    const { isbn, id_livro, total_disponivel } = await request.all();
+    try {
+      const { isbn, id_tabela_livro, total_disponivel, total_emprestado } =
+        request;
 
-    const livroFisicoValidado = await validate(
-      {
+      const livroFisicoValidado = await validate(
+        {
+          isbn,
+          id_tabela_livro,
+          total_disponivel,
+          total_emprestado,
+        },
+        livroFisicoValidador
+      );
+
+      if (livroFisicoValidado.fails()) {
+        throw new BadRequestException(
+          "Credenciais de livro físico inválidas.",
+          "E_INVALID_CREDENTIAL"
+        );
+      }
+
+      const livroExistente = await Livro.findBy("id", id_tabela_livro);
+
+      if (!livroExistente) {
+        throw new BadRequestException(
+          "Livro não encontrado.",
+          "E_BOOK_NOT_FOUND"
+        );
+      }
+
+      const novoLivroFisico = await LivroFisico.create({
         isbn,
-        id_livro,
+        id_tabela_livro,
         total_disponivel,
-      },
-      livroFisicoValidador
-    );
+        total_emprestado,
+      });
 
-    if (livroFisicoValidado.fails()) {
-      throw new BadRequestException(
-        "Credenciais de livro físico inválidas.",
-        "E_INVALID_CREDENTIAL"
-      );
+      return {
+        message: "Livro físico criado com sucesso!",
+        novoLivroFisico,
+      };
+    } catch (error) {
+      console.log(error);
     }
+  }
 
-    const livroExistente = await Livro.findBy("id", id_livro);
+  async destroy({ request }) {
+    try {
+      const { id } = request;
 
-    if (!livroExistente) {
-      throw new BadRequestException(
-        "Livro não encontrado.",
-        "E_BOOK_NOT_FOUND"
-      );
+      const livro = await LivroFisico.findBy("id_tabela_livro", id);
+
+      const livroFisicoDeletado = await livro.delete();
+
+      return { message: "Livro Físico Excluído", livroFisicoDeletado, livro };
+    } catch (error) {
+      console.log(error);
     }
-
-    const novoLivroFisico = LivroFisico.create({
-      isbn,
-      id_livro,
-      total_disponivel,
-      total_emprestado: 0,
-    });
-
-    return {
-      message: "Livro físico criado com sucesso!",
-      novoLivroFisico,
-    };
   }
 }
 
