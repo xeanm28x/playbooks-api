@@ -16,8 +16,11 @@
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
 
-Route.get('/', () => {
-  return { greeting: 'Hello world in JSON' }
-});
+//Usuários
+Route.post("/usuarios", "UsuarioController.store");
+Route.post("/login", "UsuarioController.login");
+Route.get("/usuarios", "UsuarioController.show").middleware("auth");
 
-Route.post('/livros', 'LivroController.store');
+//Livros
+Route.post('/livros/add', 'LivroController.store').middleware("auth");
+Route.post('/livros/delete', 'LivroController.destroy').middleware("auth");
