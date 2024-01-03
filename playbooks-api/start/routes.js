@@ -24,4 +24,10 @@ Route.get("/usuarios", "UsuarioController.show").middleware("auth");
 //Livros
 Route.post("/livros", "LivroController.store").middleware("auth");
 Route.get("/livros", "LivroController.show").middleware("auth");
+//Route.patch("/livros", "LivroController.update").middleware("auth");
 Route.delete("/livros", "LivroController.destroy").middleware("auth");
+
+//Empréstimo
+Route.post("/emprestimo", "EmprestimoController.store").middleware("auth");
+Route.get("/emprestimo", "EmprestimoController.show").middleware("auth");
+Route.patch("/emprestimo", "EmprestimoController.devolver").middleware("auth");

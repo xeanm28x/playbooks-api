@@ -16,23 +16,20 @@ const userTester = {
 
 let token = "";
 
-test("Deve Criar um usuário", async ({ assert, client }) => {
-  await cadastrar(assert, client, userTester, 200);
+test("Deve Criar um usuário", async ({ client }) => {
+  await cadastrar(client, userTester, 200);
 });
 
-test("Deve fazer login do usuário criado", async ({ assert, client }) => {
-  await cadastrar(assert, client, userTester, 200);
+test("Deve fazer login do usuário criado", async ({ client }) => {
+  await cadastrar(client, userTester, 200);
 
   //testa o login depois de criar
   await login(client, userTester, 200);
 });
 
-test("Deve mostrar as informações de perfil do usuário", async ({
-  assert,
-  client,
-}) => {
+test("Deve mostrar as informações de perfil do usuário", async ({ client }) => {
   //cria o usuário primeiro
-  await cadastrar(assert, client, userTester, 200);
+  await cadastrar(client, userTester, 200);
   //faz o login depois de criar o usuário
   await login(client, userTester, 200);
 
@@ -53,28 +50,25 @@ const userError = {
 };
 
 test("Não Deve Criar um usuário, por causa de crendeciais inválidas", async ({
-  assert,
   client,
 }) => {
-  await cadastrar(assert, client, userError, 400);
+  await cadastrar(client, userError, 400);
 });
 
 test("Não Deve fazer login do usuário criado, por causa de credenciais inválidas", async ({
-  assert,
   client,
 }) => {
-  await cadastrar(assert, client, userTester, 200);
+  await cadastrar(client, userTester, 200);
 
   //testa o login depois de criar
   await login(client, userError, 400);
 });
 
 test("Não Deve mostrar as informações de perfil do usuário, por não estar logado", async ({
-  assert,
   client,
 }) => {
   //cria o usuário primeiro
-  await cadastrar(assert, client, userTester, 200);
+  await cadastrar(client, userTester, 200);
   //faz o login depois de criar o usuário
   await login(client, userError, 400);
 
@@ -86,9 +80,9 @@ test("Não Deve mostrar as informações de perfil do usuário, por não estar l
   profileResponse.assertStatus(401);
 });
 
-async function cadastrar(assert, client, user, resultadoEsperado) {
+async function cadastrar(client, user, resultadoEsperado) {
   const response = await client.post("/usuarios").send(user).end();
-  response.assertStatus(resultadoEsperado);
+  return response.assertStatus(resultadoEsperado);
 }
 
 async function login(client, user, resultadoEsperado) {

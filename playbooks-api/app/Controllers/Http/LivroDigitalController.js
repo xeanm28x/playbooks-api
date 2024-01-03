@@ -58,6 +58,29 @@ class LivroDigitalController {
     }
   }
 
+  async update({ request }) {
+    try {
+      const { isbn, arquivo_pdf } = request;
+
+      const livroDigitalAtualizado = await LivroDigital.query()
+        .where("isbn", isbn)
+        .update({ arquivo_pdf });
+
+      if (!livroDigitalAtualizado)
+        throw new BadRequestException(
+          "E_NOT_UPDATE",
+          "Livro Físico não atualizado"
+        );
+
+      return {
+        message: "Livro físico atualizado com sucesso!",
+        livroDigitalAtualizado,
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async destroy({ request }) {
     try {
       const { id } = request;

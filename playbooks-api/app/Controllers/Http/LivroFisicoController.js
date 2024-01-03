@@ -61,6 +61,32 @@ class LivroFisicoController {
     }
   }
 
+  async update({ request }) {
+    try {
+      const { isbn, total_disponivel, total_emprestado } = request;
+
+      const livroFisicoAtualizado = await LivroFisico.query()
+        .where("isbn", isbn)
+        .update({
+          total_disponivel,
+          total_emprestado,
+        });
+
+      if (!livroFisicoAtualizado)
+        throw new BadRequestException(
+          "E_NOT_UPDATE",
+          "Livro Físico não atualizado"
+        );
+
+      return {
+        message: "Livro físico atualizado com sucesso!",
+        livroFisicoAtualizado,
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async destroy({ request }) {
     try {
       const { id } = request;

@@ -6,6 +6,7 @@ const LivroFisicoController = use("App/Controllers/Http/LivroFisicoController");
 const LivroDigitalController = use(
   "App/Controllers/Http/LivroDigitalController"
 );
+const LivroDigitalModel = use("App/Models/LivroDigital");
 const { validate } = use("Validator");
 const BadRequestException = use("App/Exceptions/BadRequestException");
 
@@ -67,7 +68,7 @@ class LivroController {
       });
       const id_tabela_livro = novoLivro.id;
 
-      const controller = await this.escolherTipoDoLivro(arquivo_pdf);
+      const controller = await this.escolherControllerDoLivro(arquivo_pdf);
       const controllerResponse = await controller.store({
         request: {
           titulo,
@@ -116,6 +117,46 @@ class LivroController {
     }
   }
 
+  /* UPDATE */
+
+  async update({ request }) {
+    try {
+      const {
+        titulo,
+        autor,
+        genero,
+        numero_paginas,
+        editora,
+        ano_publicacao,
+        arquivo_pdf,
+        isbn,
+        total_disponivel,
+        total_emprestado,
+        id_tabela_livro,
+      } = await request.all();
+
+      const controller = await this.escolherControllerDoLivro(arquivo_pdf);
+      const controllerResponse = await controller.update({
+        request: {
+          titulo,
+          autor,
+          genero,
+          numero_paginas,
+          editora,
+          ano_publicacao,
+          arquivo_pdf,
+          isbn,
+          total_disponivel,
+          total_emprestado,
+          id_tabela_livro,
+        },
+      });
+      return controllerResponse;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   /* REMOÇÃO */
 
   async destroy({ request }) {
@@ -156,7 +197,11 @@ class LivroController {
   /* BUSCAS */
 
   async buscarPorCampo(campo, valor) {
-    return await Livro.query().where(campo, "LIKE", `%${valor}%`).fetch();
+    const livro = await Livro.query()
+      .where(campo, "LIKE", `%${valor}%`)
+      .fetch();
+
+    return livro;
   }
 
   async buscarLivro(params) {
@@ -173,7 +218,7 @@ class LivroController {
     return await Livro.all();
   }
 
-  async escolherTipoDoLivro(arquivo_pdf) {
+  async escolherControllerDoLivro(arquivo_pdf) {
     if (arquivo_pdf) return new LivroDigitalController();
     return new LivroFisicoController();
   }

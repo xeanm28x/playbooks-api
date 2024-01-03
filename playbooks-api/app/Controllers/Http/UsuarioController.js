@@ -64,8 +64,8 @@ class UsuarioController {
 
   async show({ auth }) {
     try {
-      const { nome, email, telefone, avatar } = await auth.getUser();
-      return { nome, email, telefone, avatar };
+      const { nome, sobrenome, email, avatar } = await auth.getUser();
+      return { nome, sobrenome, email, avatar };
     } catch (error) {
       throw new BadRequestException(
         "Credenciais perdidas.",
