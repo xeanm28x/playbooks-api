@@ -1,10 +1,8 @@
 "use strict";
 
 const Livro = use("App/Models/Livro");
-const LivroFisicoController = use("App/Controllers/Http/LivroFisicoController");
-const LivroDigitalController = use(
-  "App/Controllers/Http/LivroDigitalController"
-);
+const LivroFisico = use("App/Models/LivroFisico");
+const LivroDigital = use("App/Models/LivroDigital");
 const { validate } = use("Validator");
 const BadRequestException = use("App/Exceptions/BadRequestException");
 
@@ -18,9 +16,12 @@ const livroValidador = {
 };
 
 class LivroController {
-  /* INSERÇÃO */
+
+  // CRIAÇÃO
+  // !! ADMIN
 
   async store({ request }) {
+
     const { titulo, autor, genero, numero_paginas, editora, ano_publicacao } =
       await request.all();
 
@@ -56,11 +57,13 @@ class LivroController {
       message: "Livro criado com sucesso!",
       novoLivro,
     };
+
   }
 
-  /* LISTAGEM ÚNICA */
+  // LISTAGEM DE UM ÚNICO LIVRO
 
   async show({ request }) {
+
     const {
       id,
       titulo,
@@ -79,31 +82,50 @@ class LivroController {
       editora,
       ano_publicacao,
     });
+
   }
 
-  /* REMOÇÃO */
+  // REMOÇÃO
+  // !! ADMIN
 
   async destroy({ params }) {
-    const livro = await Livro.findBy("id", params.id);
 
-    if (!livro) {
-      throw new BadRequestException(
-        "Livro não encontrado.",
-        "E_BOOK_NOT_FOUND"
-      );
+    try{
+
+      const livro = await Livro.findBy("id", params.id);
+
+      if (!livro) {
+        throw new BadRequestException(
+          "Livro não encontrado.",
+          "E_BOOK_NOT_FOUND"
+        );
+      }
+
+      // ANTES DE REMOVER, PRECISA VERIFICAR SE EXISTE
+      // EM FORMATO FISICO OU DIGITAL, MAS NAO PELA PROVA
+      // REAL E, SIM, PORQUE UM LIVRO NAO NECESSARIAMENTE
+      // POSSUI SUA VERSAO DIGITAL E FISICA AO MESMO TEMPO
+
+      const livroFisicoCorrespondente = await LivroFisico.findBy("id_tabela_livro", params.id);
+
+      if(livroFisicoCorrespondente) await livroFisicoCorrespondente.delete();
+
+      const livroDigitalCorrespondente = await LivroDigital.findBy("id_tabela_livro", params.id);
+
+      if(livroDigitalCorrespondente) await livroDigitalCorrespondente.delete();
+
+      return {
+        message: "Livro excluído com sucesso.",
+        livro,
+      };
+
+    }catch(erro){
+
     }
 
-    await LivroFisicoController.destroy(params);
-
-    await LivroDigitalController.destroy(params);
-
-    return {
-      message: "Livro excluído com sucesso.",
-      livro,
-    };
   }
 
-  /* BUSCAS */
+  // BUSCAS
 
   async findByCampo(campo, valor) {
     return await Livro.query().where(campo, "LIKE", `%${valor}%`).fetch();
