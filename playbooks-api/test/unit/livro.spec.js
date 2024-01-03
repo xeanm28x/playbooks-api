@@ -3,8 +3,6 @@ const Livro = use('App/Models/Livro');
 
 trait('Test/ApiClient');
 
-/* LIMPEZA NO BANCO ANTES DO TESTE UNITARIO */
-
 trait('DatabaseTransactions');
 
 test('deve criar um novo livro', async ({assert, client}) => {
@@ -18,10 +16,11 @@ test('deve criar um novo livro', async ({assert, client}) => {
         ano_publicacao : 2013
     }
 
-    const resposta = await client.post('/livros/add').send(novoLivro).end();
+    const resposta = await client.post('/livros').send(novoLivro).end();
     resposta.assertStatus(200);
     resposta.assertJSONSubset({
-        message: "Livro criado com sucesso!"
+        message: "Livro criado com sucesso!",
+        novoLivro
     });
 
     const livroEncontrado = await Livro.findBy('titulo', novoLivro.titulo);

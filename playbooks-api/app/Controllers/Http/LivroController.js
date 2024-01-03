@@ -22,41 +22,54 @@ class LivroController {
 
   async store({ request }) {
 
-    const { titulo, autor, genero, numero_paginas, editora, ano_publicacao } =
+    try{
+
+      const { titulo, autor, genero, numero_paginas, editora, ano_publicacao } =
       await request.all();
 
-    const livroValidado = await validate(
-      {
+      const livroValidado = await validate(
+        {
+          titulo,
+          autor,
+          genero,
+          numero_paginas,
+          editora,
+          ano_publicacao,
+        },
+        livroValidador
+      );
+
+      if (livroValidado.fails()) {
+        throw new BadRequestException(
+          "Credenciais de livro inválidas.",
+          "E_INVALID_CREDENTIAL"
+        );
+      }
+
+      if(numero_paginas == 0){
+        throw new BadRequestException(
+          "O número de páginas não pode ser 0.",
+          "E_INVALID_NUMBER_PAGES"
+        );
+      }
+
+      const novoLivro = await Livro.create({
         titulo,
         autor,
         genero,
         numero_paginas,
         editora,
         ano_publicacao,
-      },
-      livroValidador
-    );
+      });
 
-    if (livroValidado.fails()) {
-      throw new BadRequestException(
-        "Credenciais de livro inválidas.",
-        "E_INVALID_CREDENTIAL"
-      );
+      return {
+        message: "Livro criado com sucesso!",
+        novoLivro,
+      };
+
+    }catch(erro){
+
     }
-
-    const novoLivro = await Livro.create({
-      titulo,
-      autor,
-      genero,
-      numero_paginas,
-      editora,
-      ano_publicacao,
-    });
-
-    return {
-      message: "Livro criado com sucesso!",
-      novoLivro,
-    };
 
   }
 
@@ -95,10 +108,12 @@ class LivroController {
       const livro = await Livro.findBy("id", params.id);
 
       if (!livro) {
+
         throw new BadRequestException(
           "Livro não encontrado.",
           "E_BOOK_NOT_FOUND"
         );
+
       }
 
       // ANTES DE REMOVER, PRECISA VERIFICAR SE EXISTE
