@@ -18,7 +18,6 @@ const livroValidador = {
 class LivroController {
 
   // CRIAÇÃO
-  // !! ADMIN
 
   async store({ request }) {
 
@@ -77,29 +76,106 @@ class LivroController {
 
   async show({ request }) {
 
-    const {
-      id,
-      titulo,
-      autor,
-      genero,
-      numero_paginas,
-      editora,
-      ano_publicacao,
-    } = await request.all();
-    return await this.findBook({
-      id,
-      titulo,
-      autor,
-      genero,
-      numero_paginas,
-      editora,
-      ano_publicacao,
-    });
+    try{
+
+      const {
+        id,
+        titulo,
+        autor,
+        genero,
+        numero_paginas,
+        editora,
+        ano_publicacao,
+      } = await request.all();
+
+      return await this.findBook({
+        id,
+        titulo,
+        autor,
+        genero,
+        numero_paginas,
+        editora,
+        ano_publicacao,
+      });
+
+    }catch(erro){
+
+    }
+
+  }
+
+  // EDIÇÃO
+  // REQUEST -> DADOS INSERIDOS PARA UPDATE
+  // REQUEST.PARAMS -> DADOS ATUAIS DO LIVRO A SER ATUALIZADO
+
+  async update({ request, params }){
+
+    try{
+
+      const { titulo, autor, numero_paginas, editora, genero, ano_publicacao} = await request.all();
+
+      const livroEditado = {
+
+        id: params.id,
+        titulo: titulo,
+        autor: autor,
+        numero_paginas: numero_paginas,
+        editora: editora,
+        genero: genero,
+        ano_publicacao: ano_publicacao
+
+      }
+
+      const livroValidado = await validate({
+        livroEditado,
+        livroValidador
+      });
+
+      if(livroValidado.fails()){
+
+        throw new BadRequestException(
+          "Credenciais de livro físico inválidas.",
+          "E_INVALID_CREDENTIAL"
+        );
+
+      }
+
+      const livroExistente = await Livro.findBy("id", params.id);
+
+      if(!livroExistente){
+
+        throw new BadRequestException(
+          "Livro não encontrado.",
+          "BOOK_NOT_FOUND"
+        );
+
+      }
+
+      if(livroEditado != livroExistente){
+
+        livroExistente.titulo = livroEditado.titulo;
+        livroExistente.autor = livroEditado.autor;
+        livroExistente.numero_paginas = livroEditado.numero_paginas;
+        livroExistente.editora = livroEditado.editora;
+        livroExistente.genero = livroEditado.genero;
+        livroExistente.ano_publicacao = livroEditado.ano_publicacao;
+
+        await livroExistente.save();
+
+        return{
+          message: "Livro atualizado com sucesso!",
+          livroExistente
+        }
+
+      }
+
+    }catch(erro){
+
+    }
 
   }
 
   // REMOÇÃO
-  // !! ADMIN
 
   async destroy({ params }) {
 
@@ -143,22 +219,39 @@ class LivroController {
   // BUSCAS
 
   async findByCampo(campo, valor) {
-    return await Livro.query().where(campo, "LIKE", `%${valor}%`).fetch();
+
+    try{
+
+      return await Livro.query().where(campo, "LIKE", `%${valor}%`).fetch();
+
+    }catch(erro){
+
+    }
+
   }
 
   async findBook(params) {
-    if (params.id) return this.findByCampo("id", params.id);
-    if (params.titulo) return this.findByCampo("titulo", params.titulo);
-    if (params.autor) return this.findByCampo("autor", params.autor);
-    if (params.genero) return this.findByCampo("genero", params.genero);
-    if (params.ano_publicacao)
-      return this.findByCampo("ano_publicacao", params.ano_publicacao);
-    if (params.editora) return this.findByCampo("editora", params.editora);
-    if (params.numero_paginas)
-      return this.findByCampo("numero_paginas", params.numero_paginas);
 
-    return await Livro.all();
+    try{
+
+      if (params.id) return this.findByCampo("id", params.id);
+      if (params.titulo) return this.findByCampo("titulo", params.titulo);
+      if (params.autor) return this.findByCampo("autor", params.autor);
+      if (params.genero) return this.findByCampo("genero", params.genero);
+      if (params.ano_publicacao)
+        return this.findByCampo("ano_publicacao", params.ano_publicacao);
+      if (params.editora) return this.findByCampo("editora", params.editora);
+      if (params.numero_paginas)
+        return this.findByCampo("numero_paginas", params.numero_paginas);
+
+      return await Livro.all();
+
+    }catch(erro){
+
+    }
+
   }
+
 }
 
 module.exports = LivroController;

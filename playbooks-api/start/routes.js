@@ -25,17 +25,20 @@ Route.get("/usuarios", "UsuarioController.show").middleware("auth");
 Route.post("/livros", "LivroController.store").middleware("auth");
 Route.get("/livros", "LivroController.show").middleware("auth");
 Route.delete("/livros", "LivroController.destroy").middleware("auth");
+Route.patch("/livros", "LivroController.update").middleware("auth");
 
 //Livros digitais
 Route.post("/livrosDigitais", "LivroDigitalController.store").middleware("auth");
-Route.get("/livrosDigitais", "LivroDigitalController.show").middleware("auth");
+Route.get("/livrosDigitais/show", "LivroDigitalController.show").middleware("auth");
 Route.get("/livrosDigitais", "LivroDigitalController.index").middleware("auth");
 Route.delete("/livrosDigitais", "LivroDigitalController.destroy").middleware("auth");
 Route.patch("/livrosDigitais", "LivroDigitalController.update").middleware("auth");
 
 //Livros fisicos
 Route.post("/livrosFisicos", "LivroFisicoController.store").middleware("auth");
-Route.get("/livrosFisicos", "LivroFisicoController.show").middleware("auth");
+Route.get("/livrosFisicos/show", "LivroFisicoController.show").middleware("auth");
 Route.get("/livrosFisicos", "LivroFisicoController.index").middleware("auth");
 Route.delete("/livrosFisicos", "LivroFisicoController.destroy").middleware("auth");
 Route.patch("/livrosFisicos", "LivroFisicoController.update").middleware("auth");
+
+//Emprestimos

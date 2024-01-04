@@ -7,55 +7,60 @@ const BadRequestException = use("App/Exceptions/BadRequestException");
 
 const livroDigitalValidador = {
   isbn: "required",
-  id_livro: "required",
+  id_tabela_livro: "required",
   url_firebase: "required"
 };
 
 class LivroDigitalController{
 
   // INSERÇÃO
-  // !! ADMIN
 
   async store({ request }){
 
-    const {isbn, id_livro, url_firebase} = await request.all();
+    try{
 
-    const livroDigitalValidado = await validate(
-        {
-          isbn,
-          id_livro,
-          url_firebase
-        },
-        livroDigitalValidador
-    );
+      const {isbn, id_tabela_livro, url_firebase} = await request.all();
 
-    if (livroDigitalValidado.fails()) {
-        throw new BadRequestException(
-            "Credenciais de e-book inválidas.",
-            "E_INVALID_CREDENTIAL"
-        );
-    }
-
-    // VERIFICANDO SE EXISTE O LIVRO REQUISITADO
-
-    const livroExistente = await Livro.findBy('id', id_livro);
-
-    if(!livroExistente){
-      throw new BadRequestException(
-        "Livro não encontrado.",
-        "E_BOOK_NOT_FOUND"
+      const livroDigitalValidado = await validate(
+          {
+            isbn,
+            id_tabela_livro,
+            url_firebase
+          },
+          livroDigitalValidador
       );
-    }
 
-    const novoLivroDigital = await LivroDigital.create({
-        isbn,
-        id_livro,
-        url_firebase
-    });
+      if (livroDigitalValidado.fails()) {
+          throw new BadRequestException(
+              "Credenciais de e-book inválidas.",
+              "E_INVALID_CREDENTIAL"
+          );
+      }
 
-    return {
-        message : `Versão e-book do livro ${livroExistente.titulo} criada com sucesso!`,
-        novoLivroDigital
+      // VERIFICANDO SE EXISTE O LIVRO REQUISITADO
+
+      const livroExistente = await Livro.findBy('id', id_tabela_livro);
+
+      if(!livroExistente){
+        throw new BadRequestException(
+          "Livro não encontrado.",
+          "E_BOOK_NOT_FOUND"
+        );
+      }
+
+      const novoLivroDigital = await LivroDigital.create({
+          isbn,
+          id_tabela_livro,
+          url_firebase
+      });
+
+      return {
+          message : `Versão e-book do livro ${livroExistente.titulo} criada com sucesso!`,
+          novoLivroDigital
+      }
+
+    }catch(erro){
+
     }
 
 }
@@ -64,102 +69,134 @@ class LivroDigitalController{
 
 async show({ request }){
 
-  const { isbn, id_livro } = await request.all();
+  try{
 
-  const livroDigitalExistente = await LivroDigital.findBy("isbn", isbn);
+    const { isbn, id_tabela_livro } = await request.all();
 
-  if(!livroDigitalExistente){
+    const livroDigitalExistente = await LivroDigital.findBy("isbn", isbn);
 
-    throw new BadRequestException(
-      "Versão digital não encontrada.",
-      "E_EBOOK_NOT_FOUND"
-    );
+    if(!livroDigitalExistente){
+
+      throw new BadRequestException(
+        "Versão digital não encontrada.",
+        "E_EBOOK_NOT_FOUND"
+      );
+
+    }
+
+    const livroCorrespondente = await Livro.findBy("id", id_tabela_livro);
+
+    return{ livroDigitalExistente, livroCorrespondente }
+
+  }catch(erro){
 
   }
-
-  const livroCorrespondente = await Livro.findBy("id", id_livro);
-
-  return{ livroDigitalExistente, livroCorrespondente }
 
 }
 
 // EDICAO
-// !! ADMIN
+// REQUEST -> DADOS INSERIDOS PARA UPDATE
+// REQUEST.PARAMS -> DADOS ATUAIS DO LIVRO A SER ATUALIZADO
 
 async update({ request, params }){
 
-  const {id, isbn, id_livro} = await request.all();
+  try{
 
-  const livroDigitalEditado = {
+    const {id, isbn, id_tabela_livro, url_firebase} = await request.all();
 
-    isbn : params.isbn,
-    id_livro : id_livro,
-    url_firebase : params.url_firebase
+    if(params.id_tabela_livro != id_tabela_livro){
 
-  };
+      throw new BadRequestException(
+        "Não é permitido alterar o livro correspondente a essa versão digital.",
+        "E_INVALID_OPERATION"
+      );
 
-  const livroDigitalValidado = await validate(
-    livroDigitalEditado,
-    livroDigitalValidador
-  );
+    }
 
-  if(livroDigitalValidado.fails()){
+    const livroDigitalEditado = {
 
-    throw new BadRequestException(
-      "Credenciais de e-book inválidas.",
-      "E_INVALID_CREDENTIAL"
+      isbn : isbn,
+      id_tabela_livro : params.id_tabela_livro,
+      url_firebase : url_firebase
+
+    };
+
+    const livroDigitalValidado = await validate(
+      livroDigitalEditado,
+      livroDigitalValidador
     );
 
-  }
+    if(livroDigitalValidado.fails()){
 
-  const livroDigitalExistente = await LivroDigital.query()
-                                .where("id", id)
-                                .where("id_tabela_livro", id_livro)
-                                .where("isbn", isbn)
-                                .fetch();
+      throw new BadRequestException(
+        "Credenciais de e-book inválidas.",
+        "E_INVALID_CREDENTIAL"
+      );
 
-  if(!livroDigitalExistente){
+    }
 
-    throw new BadRequestException(
-      "Versão digital não encontrada.",
-      "E_EBOOK_NOT_FOUND"
-    );
+    const livroDigitalExistente = await LivroDigital.query()
+                                  .where("id", params.id)
+                                  .where("id_tabela_livro", params.id_tabela_livro)
+                                  .where("isbn", params.isbn)
+                                  .fetch();
 
-  }
+    if(!livroDigitalExistente){
 
-  livroDigitalExistente.isbn = livroDigitalEditado.isbn;
-  livroDigitalExistente.url_firebase = livroDigitalEditado.url_firebase;
+      throw new BadRequestException(
+        "Versão digital não encontrada.",
+        "E_EBOOK_NOT_FOUND"
+      );
 
-  await livroDigitalExistente.save();
+    }
 
-  return{
-    message: "E-book atualizado com sucesso!",
-    livroDigitalExistente
+    if(livroDigitalEditado.isbn != livroDigitalExistente.isbn || livroDigitalEditado.url_firebase != livroDigitalExistente.url_firebase){
+
+      livroDigitalExistente.isbn = livroDigitalEditado.isbn;
+
+      livroDigitalExistente.total_disponivel = livroDigitalEditado.total_disponivel;
+
+      await livroDigitalExistente.save();
+
+      return{
+        message: "E-book atualizado com sucesso!",
+        livroDigitalExistente
+      }
+
+    }
+
+  }catch(erro){
+
   }
 
 }
 
 // REMOÇÃO
-// !! ADMIN
 
 async destroy({ params }){
 
-  const livroDigitalExistente = await LivroDigital.findBy("isbn", params.isbn);
+  try{
 
-  if(!livroDigitalExistente){
+    const livroDigitalExistente = await LivroDigital.findBy("isbn", params.isbn);
 
-    throw new BadRequestException(
-      "Versão digital não encontrada.",
-      "E_EBOOK_NOT_FOUND"
-    );
+    if(!livroDigitalExistente){
 
-  }
+      throw new BadRequestException(
+        "Versão digital não encontrada.",
+        "E_EBOOK_NOT_FOUND"
+      );
 
-  await livroDigitalExistente.delete();
+    }
 
-  return{
-    message: "Versão digital removida com sucesso.",
-    livroDigitalExistente
+    await livroDigitalExistente.delete();
+
+    return{
+      message: "Versão digital removida com sucesso.",
+      livroDigitalExistente
+    }
+
+  }catch(erro){
+
   }
 
 }
@@ -168,37 +205,57 @@ async destroy({ params }){
 
 async index({ response }){
 
-  const livrosDigitais = await LivroDigital.all();
+  try{
 
-  return response.status(200).json(livrosDigitais);
+    const livrosDigitais = await LivroDigital.all();
+
+    return response.status(200).json(livrosDigitais);
+
+  }catch(erro){
+
+  }
 
 }
 
 async findByCampo(campo, valor) {
-  return await LivroDigital.query().where(campo, "LIKE", `%${valor}%`).fetch();
+
+  try{
+
+    return await LivroDigital.query().where(campo, "LIKE", `%${valor}%`).fetch();
+
+  }catch(erro){
+
+  }
+
 }
 
 // BAIXAR E-BOOK
 
 async downloadEbook({ request }){
 
-  const {id, isbn, url_firebase} = await request.all();
+  try{
 
-  const livroDigitalExistente = await LivroDigital.query()
-                                .where("id", id)
-                                .where("isbn", isbn)
-                                .fetch();
+    const {id, isbn, url_firebase} = await request.all();
 
-  if(!livroDigitalExistente){
+    const livroDigitalExistente = await LivroDigital.query()
+                                  .where("id", id)
+                                  .where("isbn", isbn)
+                                  .fetch();
 
-    throw new BadRequestException(
-      "Versão digital não encontrada.",
-      "E_EBOOK_NOT_FOUND"
-    );
+    if(!livroDigitalExistente){
+
+      throw new BadRequestException(
+        "Versão digital não encontrada.",
+        "E_EBOOK_NOT_FOUND"
+      );
+
+    }
+
+    // TO DO: DOWNLOAD URL
+
+  }catch(erro){
 
   }
-
-  // TO DO: DOWNLOAD URL
 
 }
 
