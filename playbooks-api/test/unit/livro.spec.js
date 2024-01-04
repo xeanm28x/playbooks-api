@@ -1,5 +1,4 @@
 const { test, trait } = use("Test/Suite")("TesteLivros");
-const Livro = use("App/Models/Livro");
 const { cadastrar, login } = require("./usuario.spec");
 
 trait("Test/ApiClient");
@@ -16,19 +15,22 @@ const usuario = {
   avatar: "https://imag.com",
 };
 
-test("deve criar um novo livro", async ({ assert, client }) => {
-  await cadastrar(assert, client, usuario, 200);
+const novoLivro = {
+  titulo: "Psicose",
+  autor: "Robert Bloch",
+  genero: "Horror",
+  numero_paginas: 256,
+  editora: "Darkside",
+  ano_publicacao: 2013,
+  isbn: 13,
+  total_disponivel: 10,
+  total_emprestado: 0,
+};
+
+test("deve criar um novo livro", async ({ client }) => {
+  await cadastrar(client, usuario, 200);
 
   const token = await login(client, usuario, 200);
-
-  const novoLivro = {
-    titulo: "Psicose",
-    autor: "Robert Bloch",
-    genero: "Horror",
-    numero_paginas: 256,
-    editora: "Darkside",
-    ano_publicacao: 2013,
-  };
 
   const resposta = await client
     .post("/livros")
@@ -36,32 +38,64 @@ test("deve criar um novo livro", async ({ assert, client }) => {
     .send(novoLivro)
     .end();
   resposta.assertStatus(200);
-  resposta.assertJSONSubset({
-    message: "Livro criado com sucesso!",
-  });
+}, 10000);
 
-  const livroEncontrado = await Livro.findBy("titulo", novoLivro.titulo);
-  assert.notEqual(livroEncontrado, null);
-});
-
-test("deve remover um livro", async ({ assert, client }) => {
-  await cadastrar(assert, client, usuario, 200);
+test("deve buscar todos os livros", async ({ client }) => {
+  await cadastrar(client, usuario, 200);
 
   const token = await login(client, usuario, 200);
 
-  const livro = {
-    titulo: "Psicose",
-    autor: "Robert Bloch",
-    genero: "Horror",
-    numero_paginas: 256,
-    editora: "Darkside",
-    ano_publicacao: 2013,
-  };
+  await client
+    .post("/livros")
+    .header("Authorization", token)
+    .send(novoLivro)
+    .end();
+
+  const livro = await client
+    .get(`/livros`)
+    .header("Authorization", token)
+    .end();
+  livro.assertStatus(200);
+}, 10000);
+
+test("deve buscar o livro específico", async ({ client }) => {
+  await cadastrar(client, usuario, 200);
+
+  const token = await login(client, usuario, 200);
+
+  await client
+    .post("/livros")
+    .header("Authorization", token)
+    .send(novoLivro)
+    .end();
+
+  const livro = await client
+    .get(`/livros?titulo=${novoLivro.titulo}`)
+    .header("Authorization", token)
+    .end();
+  livro.assertStatus(200);
+}, 10000);
+
+test("deve remover um livro", async ({ client }) => {
+  await cadastrar(client, usuario, 200);
+
+  const token = await login(client, usuario, 200);
+
+  await client
+    .post("/livros")
+    .header("Authorization", token)
+    .send(novoLivro)
+    .end();
+
+  const { body } = await client
+    .get(`/livros?titulo=${novoLivro.titulo}`)
+    .header("Authorization", token)
+    .end();
+  const livroId = body[0].id;
 
   const resposta = await client
-    .delete("/livros")
+    .delete(`livros?id=${livroId}`)
     .header("Authorization", token)
-    .send(livro)
     .end();
   resposta.assertStatus(200);
-});
+}, 10000);

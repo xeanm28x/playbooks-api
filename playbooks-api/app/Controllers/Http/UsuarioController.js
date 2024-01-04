@@ -64,11 +64,12 @@ class UsuarioController {
 
   async show({ auth }) {
     try {
-      const { nome, sobrenome, email, avatar } = await auth.getUser();
+      const { id, nome, sobrenome, email, avatar } = await auth.getUser();
+
       return { nome, sobrenome, email, avatar };
     } catch (error) {
       throw new BadRequestException(
-        "Credenciais perdidas.",
+        "Credenciais perdidas, faça login novamente.",
         "E_MISSING_CREDENTIALS"
       );
     }

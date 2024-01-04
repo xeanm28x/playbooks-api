@@ -7,7 +7,7 @@ const LivroFisico = use("App/Models/LivroFisico");
 const LivroFisicoController = use("App/Controllers/Http/LivroFisicoController");
 const BadRequestException = use("App/Exceptions/BadRequestException");
 
-const data = new Date();
+const { hoje, calcularDevolucao } = use("App/Helpers/Emprestimo");
 
 class EmprestimoController {
   async store({ request }) {
@@ -20,7 +20,9 @@ class EmprestimoController {
           "Credenciais inválidas para fazer um empréstimo!"
         );
 
-      const livroFisico = await LivroFisico.findBy("id", id_livro_fisico);
+      const livroFisico = await LivroFisico.query()
+        .where("id", id_livro_fisico)
+        .first();
 
       if (!livroFisico)
         throw new BadRequestException(
@@ -31,16 +33,20 @@ class EmprestimoController {
       if (livroFisico.total_disponivel <= 0)
         return "Todos os exemplares desse livro, já foram emprestados!";
 
-      const emprestimoExistente = await Emprestimo.findBy({ id_usuario });
+      const emprestimoExistente = await Emprestimo.query()
+        .where({ id_usuario })
+        .first();
       if (emprestimoExistente && !emprestimoExistente.data_devolucao) {
-        return "Só pode ler 1 livro por vez!";
+        return "Só pode pegar 1 livro por vez!";
       }
 
-      const livro = await Livro.findBy("id", livroFisico.id_tabela_livro);
+      const livro = await Livro.query()
+        .where("id", livroFisico.id_tabela_livro)
+        .first();
 
-      const data_prevista_devolucao = this.calcularData(livro);
+      const data_prevista_devolucao = await calcularDevolucao(livro);
 
-      const emprestimo = await Emprestimo.create({
+      await Emprestimo.create({
         id_usuario,
         id_livro_fisico,
         data_prevista_devolucao,
@@ -54,12 +60,15 @@ class EmprestimoController {
         },
       });
 
-      const usuarioDoEmprestimo = await Usuario.findBy("id", id_usuario);
+      let usuario = await Usuario.query().where("id", id_usuario).first();
+      usuario.total_emprestimos_realizados += 1;
+      await usuario.save();
+      usuario = await Usuario.find(usuario.id);
 
       return {
         message: "Empréstimo Feito com Sucesso",
-        emprestimo,
-        usuarioDoEmprestimo,
+        livro,
+        usuario,
       };
     } catch (error) {
       console.log(error);
@@ -70,18 +79,20 @@ class EmprestimoController {
     try {
       const usuario = await auth.getUser();
 
-      const emprestimo = await Emprestimo.findBy("id_usuario", usuario.id);
-      const livroFisicoEmprestado = await LivroFisico.findBy(
-        "id",
-        emprestimo.id_livro_fisico
-      );
-      const livro = await Livro.findBy(
-        "id",
-        livroFisicoEmprestado.id_tabela_livro
-      );
+      const emprestimo = await Emprestimo.query()
+        .where("id_usuario", usuario.id)
+        .first();
 
       if (!emprestimo || emprestimo.data_devolucao)
         return { message: "Sem empréstimos" };
+
+      const livroFisicoEmprestado = await LivroFisico.query()
+        .where("id", emprestimo.id_livro_fisico)
+        .first();
+      const livro = await Livro.query()
+        .where("id", livroFisicoEmprestado.id_tabela_livro)
+        .first();
+
       return { message: "Empréstimos encontrados: ", emprestimo, livro };
     } catch (error) {
       console.log(error);
@@ -92,49 +103,43 @@ class EmprestimoController {
     try {
       const { id_livro_fisico } = await request.all();
 
-      const emprestimo = await Emprestimo.findBy({ id_livro_fisico });
-      if (emprestimo.data_devolucao) return "Livro já devolvido!";
+      const emprestimo = await Emprestimo.query()
+        .where({ id_livro_fisico, data_devolucao: null })
+        .first();
 
-      const livroFisico = await LivroFisico.findBy("id", id_livro_fisico);
-      if (!livroFisico)
-        throw new BadRequestException(
-          "E_BOOK_NOT_FOUND",
-          "Livro não encontrado para atualizar"
-        );
+      if (emprestimo) {
+        const livroFisico = await LivroFisico.query()
+          .where("id", id_livro_fisico)
+          .first();
+        if (!livroFisico)
+          throw new BadRequestException(
+            "E_BOOK_NOT_FOUND",
+            "Livro não encontrado para atualizar"
+          );
 
-      await new LivroFisicoController().update({
-        request: {
-          isbn: livroFisico.isbn,
-          total_disponivel: livroFisico.total_disponivel + 1,
-          total_emprestado: livroFisico.total_emprestado - 1,
-        },
-      });
+        await new LivroFisicoController().update({
+          request: {
+            isbn: livroFisico.isbn,
+            total_disponivel: livroFisico.total_disponivel + 1,
+            total_emprestado: livroFisico.total_emprestado - 1,
+          },
+        });
 
-      const data_devolucao = this.pegarHoje();
-      const livroDevolvido = await Emprestimo.query()
-        .where("id_livro_fisico", id_livro_fisico)
-        .update({ data_devolucao });
+        const data_devolucao = hoje;
+        const livroDevolvido = await Emprestimo.query()
+          .where("id_livro_fisico", id_livro_fisico)
+          .first();
+        await Emprestimo.query()
+          .where("id_livro_fisico", id_livro_fisico)
+          .update({ data_devolucao });
 
-      return { message: "Livro devolvido: ", livroDevolvido };
+        return { message: "Livro devolvido: ", livroDevolvido };
+      }
+
+      return "Sem livros para devolver";
     } catch (error) {
       console.log(error);
     }
-  }
-
-  calcularData(livro) {
-    const dias_para_ler = (livro.numero_paginas / 100) * 7;
-
-    const diaFormatado = (data.getDate() + parseInt(dias_para_ler))
-    const mesFormatado = (data.getMonth() + 1).toString().padStart(2, "0");
-
-    return `${data.getFullYear()}-${mesFormatado}-${diaFormatado}`;
-  }
-
-  pegarHoje() {
-    const diaFormatado = data.getDate().toString().padStart(2, "0");
-    const mesFormatado = (data.getMonth() + 1).toString().padStart(2, "0");
-
-    return `${data.getFullYear()}-${mesFormatado}-${diaFormatado}`;
   }
 }
 

@@ -1,7 +1,6 @@
 "use strict";
 
 const { test, trait, before } = use("Test/Suite")("Usuarios");
-const Usuario = use("App/Models/Usuario");
 
 trait("Test/ApiClient");
 trait("DatabaseTransactions");

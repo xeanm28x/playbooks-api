@@ -2,11 +2,11 @@
 
 const Livro = use("App/Models/Livro");
 const LivroDigital = use("App/Models/LivroDigital");
+const LivroFisico = use("App/Models/LivroFisico");
 const { validate } = use("Validator");
 const BadRequestException = use("App/Exceptions/BadRequestException");
 
 const livroDigitalValidador = {
-  isbn: "required",
   id_tabela_livro: "required",
   arquivo_pdf: "required",
 };
@@ -20,7 +20,6 @@ class LivroDigitalController {
 
       const livroDigitalValidado = await validate(
         {
-          isbn,
           id_tabela_livro,
           arquivo_pdf,
         },
@@ -34,16 +33,14 @@ class LivroDigitalController {
         );
       }
 
-      const livroExistente = await Livro.findBy("id", id_tabela_livro);
+      const livroDigitalExistente = await LivroDigital.findBy({ isbn });
+      const livroFisicoExistente = await LivroFisico.findBy({ isbn });
 
-      if (!livroExistente) {
-        throw new BadRequestException(
-          "Livro não encontrado.",
-          "E_BOOK_NOT_FOUND"
-        );
+      if (livroDigitalExistente || livroFisicoExistente) {
+        throw new BadRequestException("ISBN já cadastrado.", "E_DUPLICATE_KEY");
       }
 
-      const novoLivroDigital = LivroDigital.create({
+      const novoLivroDigital = await LivroDigital.create({
         isbn,
         id_tabela_livro,
         arquivo_pdf,
@@ -53,6 +50,23 @@ class LivroDigitalController {
         message: "Livro digital criado com sucesso!",
         novoLivroDigital,
       };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async show({ request }) {
+    try {
+      const { id_tabela_livro } = request;
+
+      const livro = await Livro.query().where("id", id_tabela_livro).first();
+      if (livro.ativo == 0) return;
+
+      const livroDigital = await LivroDigital.query()
+        .where({ id_tabela_livro })
+        .first();
+
+      return livroDigital;
     } catch (error) {
       console.log(error);
     }
@@ -76,20 +90,6 @@ class LivroDigitalController {
         message: "Livro físico atualizado com sucesso!",
         livroDigitalAtualizado,
       };
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  async destroy({ request }) {
-    try {
-      const { id } = request;
-
-      const livro = await LivroDigital.findBy("id_tabela_livro", id);
-
-      const livroDigitalDeletado = await livro.delete();
-
-      return { message: "Livro Digital Excluído", livroDigitalDeletado, livro };
     } catch (error) {
       console.log(error);
     }

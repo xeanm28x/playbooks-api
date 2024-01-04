@@ -1,13 +1,11 @@
 "use strict";
 
 const Livro = use("App/Models/Livro");
-const LivroFisicoModel = use("App/Models/LivroFisico");
-const LivroFisicoController = use("App/Controllers/Http/LivroFisicoController");
-const LivroDigitalController = use(
-  "App/Controllers/Http/LivroDigitalController"
-);
-const LivroDigitalModel = use("App/Models/LivroDigital");
-const { validate } = use("Validator");
+
+const { buscarLivro, escolherController, listarLivros } =
+  use("App/Helpers/Livro");
+
+const { validate, rule } = use("Validator");
 const BadRequestException = use("App/Exceptions/BadRequestException");
 
 const livroValidador = {
@@ -17,9 +15,8 @@ const livroValidador = {
   numero_paginas: "required",
   editora: "required",
   ano_publicacao: "required",
+  isbn: [rule("required"), rule("min", 13), rule("max", 13)],
 };
-
-let deleteResponse;
 
 class LivroController {
   /* INSERÇÃO */
@@ -47,6 +44,7 @@ class LivroController {
           numero_paginas,
           editora,
           ano_publicacao,
+          isbn,
         },
         livroValidador
       );
@@ -58,17 +56,25 @@ class LivroController {
         );
       }
 
-      const novoLivro = await Livro.create({
-        titulo,
-        autor,
-        genero,
-        numero_paginas,
-        editora,
-        ano_publicacao,
-      });
-      const id_tabela_livro = novoLivro.id;
+      const livroExistente = await Livro.query()
+        .where({ titulo, autor })
+        .first();
 
-      const controller = await this.escolherControllerDoLivro(arquivo_pdf);
+      let id_tabela_livro;
+      if (!livroExistente) {
+        const novoLivro = await Livro.create({
+          titulo,
+          autor,
+          genero,
+          numero_paginas,
+          editora,
+          ano_publicacao,
+          ativo: 1,
+        });
+        id_tabela_livro = novoLivro.id;
+      } else id_tabela_livro = livroExistente.id;
+
+      const controller = await escolherController(arquivo_pdf);
       const controllerResponse = await controller.store({
         request: {
           titulo,
@@ -103,7 +109,9 @@ class LivroController {
         editora,
         ano_publicacao,
       } = await request.all();
-      return await this.buscarLivro({
+
+      let livrosRetornados;
+      livrosRetornados = await buscarLivro({
         id,
         titulo,
         autor,
@@ -112,6 +120,12 @@ class LivroController {
         editora,
         ano_publicacao,
       });
+
+      if (!livrosRetornados) {
+        const livro = await Livro.all();
+        livrosRetornados = await listarLivros(livro.rows);
+      }
+      return livrosRetornados;
     } catch (error) {
       console.log(error);
     }
@@ -135,7 +149,7 @@ class LivroController {
         id_tabela_livro,
       } = await request.all();
 
-      const controller = await this.escolherControllerDoLivro(arquivo_pdf);
+      const controller = await escolherController(arquivo_pdf);
       const controllerResponse = await controller.update({
         request: {
           titulo,
@@ -162,7 +176,7 @@ class LivroController {
   async destroy({ request }) {
     try {
       const { id } = await request.all();
-      const livro = await Livro.findBy({ id });
+      let livro = await Livro.query().where({ id }).first();
 
       if (!livro) {
         throw new BadRequestException(
@@ -171,56 +185,14 @@ class LivroController {
         );
       }
 
-      const livroFisico = await LivroFisicoModel.findBy("id_tabela_livro", id);
-      if (livroFisico) {
-        deleteResponse = await new LivroFisicoController().destroy({
-          request: {
-            id,
-          },
-        });
-      } else {
-        deleteResponse = await new LivroDigitalController().destroy({
-          request: {
-            id,
-          },
-        });
-      }
+      livro.ativo = 0;
+      await livro.save();
+      livro = await Livro.find(livro.id);
 
-      await livro.delete();
-
-      return deleteResponse;
+      return { message: "Livro Excluído", livro };
     } catch (error) {
       console.log(error);
     }
-  }
-
-  /* BUSCAS */
-
-  async buscarPorCampo(campo, valor) {
-    const livro = await Livro.query()
-      .where(campo, "LIKE", `%${valor}%`)
-      .fetch();
-
-    return livro;
-  }
-
-  async buscarLivro(params) {
-    if (params.id) return this.buscarPorCampo("id", params.id);
-    if (params.titulo) return this.buscarPorCampo("titulo", params.titulo);
-    if (params.autor) return this.buscarPorCampo("autor", params.autor);
-    if (params.genero) return this.buscarPorCampo("genero", params.genero);
-    if (params.ano_publicacao)
-      return this.buscarPorCampo("ano_publicacao", params.ano_publicacao);
-    if (params.editora) return this.buscarPorCampo("editora", params.editora);
-    if (params.numero_paginas)
-      return this.buscarPorCampo("numero_paginas", params.numero_paginas);
-
-    return await Livro.all();
-  }
-
-  async escolherControllerDoLivro(arquivo_pdf) {
-    if (arquivo_pdf) return new LivroDigitalController();
-    return new LivroFisicoController();
   }
 }
 

@@ -1,12 +1,11 @@
 "use strict";
 
-const Livro = use("App/Models/Livro");
 const LivroFisico = use("App/Models/LivroFisico");
+const LivroDigital = use("App/Models/LivroDigital");
 const { validate } = use("Validator");
 const BadRequestException = use("App/Exceptions/BadRequestException");
 
 const livroFisicoValidador = {
-  isbn: "required",
   id_tabela_livro: "required",
   total_disponivel: "required",
   total_emprestado: "required",
@@ -36,13 +35,11 @@ class LivroFisicoController {
         );
       }
 
-      const livroExistente = await Livro.findBy("id", id_tabela_livro);
+      const livroDigitalExistente = await LivroDigital.findBy({ isbn });
+      const livroFisicoExistente = await LivroFisico.findBy({ isbn });
 
-      if (!livroExistente) {
-        throw new BadRequestException(
-          "Livro não encontrado.",
-          "E_BOOK_NOT_FOUND"
-        );
+      if (livroDigitalExistente || livroFisicoExistente) {
+        throw new BadRequestException("ISBN já cadastrado.", "E_DUPLICATE_KEY");
       }
 
       const novoLivroFisico = await LivroFisico.create({
@@ -56,6 +53,20 @@ class LivroFisicoController {
         message: "Livro físico criado com sucesso!",
         novoLivroFisico,
       };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async show({ request }) {
+    try {
+      const { id_tabela_livro } = request;
+
+      const livroFisico = await LivroFisico.query()
+        .where({ id_tabela_livro })
+        .first();
+
+      return livroFisico;
     } catch (error) {
       console.log(error);
     }
@@ -82,20 +93,6 @@ class LivroFisicoController {
         message: "Livro físico atualizado com sucesso!",
         livroFisicoAtualizado,
       };
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  async destroy({ request }) {
-    try {
-      const { id } = request;
-
-      const livro = await LivroFisico.findBy("id_tabela_livro", id);
-
-      const livroFisicoDeletado = await livro.delete();
-
-      return { message: "Livro Físico Excluído", livroFisicoDeletado, livro };
     } catch (error) {
       console.log(error);
     }
