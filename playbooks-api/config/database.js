@@ -51,11 +51,11 @@ module.exports = {
   mysql: {
     client: 'mysql2',
     connection: {
-      host: Env.get('DB_HOST', 'localhost'),
-      port: Env.get('DB_PORT', ''),
+      host: Env.get('DB_HOST', 'monorail.proxy.rlwy.net'),
+      port: Env.get('DB_PORT', '12143'),
       user: Env.get('DB_USER', 'root'),
-      password: Env.get('DB_PASSWORD', ''),
-      database: Env.get('DB_DATABASE', 'adonis')
+      password: Env.get('DB_PASSWORD', '2Fe5DC6aaFcF6523G53g5fFAEBEHCgaF'),
+      database: Env.get('DB_DATABASE', 'railway')
     },
     debug: Env.get('DB_DEBUG', false)
   },
