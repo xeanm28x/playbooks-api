@@ -24,6 +24,7 @@ Route.get("/usuarios", "UsuarioController.show").middleware("auth");
 //Livros
 Route.post("/livros", "LivroController.store").middleware("auth");
 Route.get("/livros", "LivroController.show").middleware("auth");
+Route.get("/livros/:id", "LivroController.show").middleware("auth");
 Route.patch("/livros", "LivroController.update").middleware("auth");
 Route.delete("/livros", "LivroController.destroy").middleware("auth");
 

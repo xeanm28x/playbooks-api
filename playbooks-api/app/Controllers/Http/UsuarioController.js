@@ -66,7 +66,7 @@ class UsuarioController {
     try {
       const { id, nome, sobrenome, email, avatar } = await auth.getUser();
 
-      return { nome, sobrenome, email, avatar };
+      return { id, nome, sobrenome, email, avatar };
     } catch (error) {
       throw new BadRequestException(
         "Credenciais perdidas, faça login novamente.",

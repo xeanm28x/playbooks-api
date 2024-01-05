@@ -33,11 +33,16 @@ class LivroDigitalController {
         );
       }
 
-      const livroDigitalExistente = await LivroDigital.findBy({ isbn });
-      const livroFisicoExistente = await LivroFisico.findBy({ isbn });
+      const livroDigitalExistente = await LivroDigital.query()
+        .where({ isbn })
+        .orWhere({ id_tabela_livro })
+        .first();
+      const livroFisicoExistente = await LivroFisico.query()
+        .where({ isbn })
+        .first();
 
       if (livroDigitalExistente || livroFisicoExistente) {
-        throw new BadRequestException("ISBN já cadastrado.", "E_DUPLICATE_KEY");
+        throw new BadRequestException("Livro já cadastrado.", "E_DUPLICATE_KEY");
       }
 
       const novoLivroDigital = await LivroDigital.create({

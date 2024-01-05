@@ -16,6 +16,7 @@ const livroValidador = {
   editora: "required",
   ano_publicacao: "required",
   isbn: [rule("required"), rule("min", 13), rule("max", 13)],
+  imagem: "required",
 };
 
 class LivroController {
@@ -30,6 +31,7 @@ class LivroController {
         numero_paginas,
         editora,
         ano_publicacao,
+        imagem,
         arquivo_pdf,
         isbn,
         total_disponivel,
@@ -45,6 +47,7 @@ class LivroController {
           editora,
           ano_publicacao,
           isbn,
+          imagem,
         },
         livroValidador
       );
@@ -69,6 +72,7 @@ class LivroController {
           numero_paginas,
           editora,
           ano_publicacao,
+          imagem,
           ativo: 1,
         });
         id_tabela_livro = novoLivro.id;
@@ -100,15 +104,11 @@ class LivroController {
 
   async show({ request }) {
     try {
-      const {
-        id,
-        titulo,
-        autor,
-        genero,
-        numero_paginas,
-        editora,
-        ano_publicacao,
-      } = await request.all();
+      const { titulo, autor, genero, numero_paginas, editora, ano_publicacao } =
+        await request.all();
+
+      let id;
+      if (request.params.id) id = request.params.id;
 
       let livrosRetornados;
       livrosRetornados = await buscarLivro({
@@ -121,10 +121,6 @@ class LivroController {
         ano_publicacao,
       });
 
-      if (!livrosRetornados) {
-        const livro = await Livro.all();
-        livrosRetornados = await listarLivros(livro.rows);
-      }
       return livrosRetornados;
     } catch (error) {
       console.log(error);

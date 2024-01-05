@@ -35,8 +35,13 @@ class LivroFisicoController {
         );
       }
 
-      const livroDigitalExistente = await LivroDigital.findBy({ isbn });
-      const livroFisicoExistente = await LivroFisico.findBy({ isbn });
+      const livroDigitalExistente = await LivroDigital.query()
+        .where({ isbn })
+        .first();
+      const livroFisicoExistente = await LivroFisico.query()
+        .where({ isbn })
+        .orWhere({id_tabela_livro})
+        .first();
 
       if (livroDigitalExistente || livroFisicoExistente) {
         throw new BadRequestException("ISBN já cadastrado.", "E_DUPLICATE_KEY");
