@@ -14,7 +14,7 @@
 
 ### STACK
 
-🎨 **Front-end:** LEO BOTAR AQ.
+🎨 **Front-end:** 
 
 ⚙ **Back-end:** Node v21.5.0, Adonis v4.1.0.
 
