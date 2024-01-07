@@ -32,6 +32,3 @@ Route.delete("/livros", "LivroController.destroy").middleware("auth");
 Route.post("/emprestimo", "EmprestimoController.store").middleware("auth");
 Route.get("/emprestimo", "EmprestimoController.show").middleware("auth");
 Route.patch("/emprestimo", "EmprestimoController.devolver").middleware("auth");
-
-//Rota exclusiva dos testes
-Route.delete("/deleteAll", "TestUtil.deleteAll").middleware("auth");

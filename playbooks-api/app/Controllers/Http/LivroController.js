@@ -194,33 +194,6 @@ class LivroController {
       console.log(error);
     }
   }
-
-  async delete({ request }) {
-    try {
-      const { id } = await request.all();
-      let livro = await Livro.query().where({ id }).first();
-
-      if (!livro) {
-        throw new BadRequestException(
-          "Livro não encontrado.",
-          "E_BOOK_NOT_FOUND"
-        );
-      }
-
-      const livroFisico = await LivroFisico.query().where({ id }).first();
-      if (livroFisico) await livroFisico.delete();
-      else {
-        const livroDigital = await LivroDigital.query().where({ id }).first();
-        await livroDigital.delete();
-      }
-
-      await livro.delete();
-
-      return { message: "Livro Deletado", livro };
-    } catch (error) {
-      console.log(error);
-    }
-  }
 }
 
 module.exports = LivroController;

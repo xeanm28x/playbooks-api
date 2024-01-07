@@ -84,11 +84,6 @@ test.group("Usuários", (group) => {
       .expect(401);
     assert.notExists(response.body.nome);
   });
-
-  group.after(async () => {
-    const usuario = await UsuarioModel.query()
-      .where("email", userPayLoad.email)
-      .first();
-    await usuario.delete();
-  });
 });
+
+module.exports = userPayLoad;
