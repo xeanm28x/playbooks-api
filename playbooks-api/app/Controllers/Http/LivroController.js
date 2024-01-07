@@ -1,6 +1,8 @@
 "use strict";
 
 const Livro = use("App/Models/Livro");
+const LivroFisico = use("App/Models/LivroFisico");
+const LivroDigital = use("App/Models/LivroDigital");
 
 const { buscarLivro, escolherController, listarLivros } =
   use("App/Helpers/Livro");
@@ -121,6 +123,8 @@ class LivroController {
         ano_publicacao,
       });
 
+      livrosRetornados = await listarLivros(livrosRetornados.rows);
+
       return livrosRetornados;
     } catch (error) {
       console.log(error);
@@ -186,6 +190,33 @@ class LivroController {
       livro = await Livro.find(livro.id);
 
       return { message: "Livro Excluído", livro };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async delete({ request }) {
+    try {
+      const { id } = await request.all();
+      let livro = await Livro.query().where({ id }).first();
+
+      if (!livro) {
+        throw new BadRequestException(
+          "Livro não encontrado.",
+          "E_BOOK_NOT_FOUND"
+        );
+      }
+
+      const livroFisico = await LivroFisico.query().where({ id }).first();
+      if (livroFisico) await livroFisico.delete();
+      else {
+        const livroDigital = await LivroDigital.query().where({ id }).first();
+        await livroDigital.delete();
+      }
+
+      await livro.delete();
+
+      return { message: "Livro Deletado", livro };
     } catch (error) {
       console.log(error);
     }
