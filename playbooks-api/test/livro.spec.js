@@ -1,12 +1,6 @@
 require("./bootstrap");
 const test = require("japa");
 const supertest = require("supertest");
-
-const LivroModel = use("App/Models/Livro");
-const LivroFisicoModel = use("App/Models/LivroFisico");
-const LivroDigitalModel = use("App/Models/LivroDigital");
-const UsuarioModel = use("App/Models/Usuario");
-
 const userPayLoad = require("./usuario.spec.js");
 
 const LivroFisico = {
@@ -122,25 +116,6 @@ test.group("Livros", (group) => {
 
     assert.notExists(response.body.livro);
   });
-
-  group.after(async () => {
-    const usuario = await UsuarioModel.query()
-      .where("email", userPayLoad.email)
-      .first();
-    await usuario.delete();
-
-    const livroFisico = await LivroFisicoModel.query()
-      .where("isbn", LivroFisico.isbn)
-      .first();
-    await livroFisico.delete();
-    const livroDigital = await LivroDigitalModel.query()
-      .where("isbn", LivroDigital.isbn)
-      .first();
-    await livroDigital.delete();
-
-    const livro = await LivroModel.query()
-      .where("id", livroFisico.id_tabela_livro)
-      .first();
-    await livro.delete();
-  });
 });
+
+module.exports = { LivroDigital, LivroFisico };
