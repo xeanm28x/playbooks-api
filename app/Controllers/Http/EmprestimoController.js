@@ -10,9 +10,11 @@ const BadRequestException = use("App/Exceptions/BadRequestException");
 const { hoje, calcularDevolucao } = use("App/Helpers/Emprestimo");
 
 class EmprestimoController {
-  async store({ request }) {
+  async store({ request, auth }) {
     try {
-      const { id_usuario, id_livro_fisico } = await request.all();
+      const { id_livro_fisico } = await request.all();
+      const user = await auth.getUser();
+      const id_usuario = user.id;
 
       if (!id_usuario || !id_livro_fisico)
         throw new BadRequestException(
