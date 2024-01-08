@@ -14,7 +14,7 @@
 
 ### STACK
 
-🎨 **Front-end:** 
+🎨 **Front-end:** Nuxt v3.8.2, Pinia v.0.4.11.
 
 ⚙ **Back-end:** Node v21.5.0, Adonis v4.1.0.
 
